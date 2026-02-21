@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Just This</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #FAF8F5;
+      color: #2C2C2C;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      transition: background 0.5s ease, color 0.5s ease;
+    }
+
+    body.dark {
+      background: #1E1E20;
+      color: #D4D0CB;
+    }
+
+    /* Progress line */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: #E8E4DF;
+      z-index: 10;
+    }
+
+    body.dark .progress-bar {
+      background: #2A2A2C;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #C4B5A4;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    body.dark .progress-fill {
+      background: #5A5550;
+    }
+
+    /* Main container */
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 60px 28px 40px;
+      text-align: center;
+    }
+
+    /* Step content */
+    .step-area {
+      width: 100%;
+      opacity: 1;
+      transition: opacity 0.25s ease;
+    }
+
+    .step-area.fading {
+      opacity: 0;
+    }
+
+    .step-text {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.4;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .step-subtext {
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #8A8A8A;
+      margin-bottom: 0;
+      min-height: 0;
+    }
+
+    body.dark .step-subtext {
+      color: #7A7672;
+    }
+
+    .step-subtext:empty {
+      display: none;
+    }
+
+    /* Buttons */
+    .actions {
+      width: 100%;
+      margin-top: 48px;
+    }
+
+    .btn-done {
+      display: block;
+      width: 100%;
+      padding: 16px 48px;
+      min-height: 52px;
+      background: #3D3D3D;
+      color: #FAF8F5;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      -webkit-appearance: none;
+    }
+
+    .btn-done:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    body.dark .btn-done {
+      background: #3A3836;
+      color: #D4D0CB;
+    }
+
+    .btn-skip {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin-top: 14px;
+      background: none;
+      border: none;
+      color: #B0A89F;
+      font-size: 14px;
+      font-weight: 400;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    body.dark .btn-skip {
+      color: #5A5550;
+    }
+
+    .btn-skip:active {
+      opacity: 0.6;
+    }
+
+    /* Step counter */
+    .step-counter {
+      position: fixed;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      color: #C4B5A4;
+      letter-spacing: 0.02em;
+    }
+
+    body.dark .step-counter {
+      color: #4A4744;
+    }
+
+    /* Streak */
+    .streak-note {
+      font-size: 13px;
+      color: #C4B5A4;
+      margin-top: 24px;
+    }
+
+    body.dark .streak-note {
+      color: #5A5550;
+    }
+
+    /* Final step link */
+    .final-link {
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #B0A89F;
+      text-decoration: none;
+      border-bottom: 1px solid #D8D2CB;
+    }
+
+    body.dark .final-link {
+      color: #5A5550;
+      border-bottom-color: #3A3836;
+    }
+
+    /* Disable during transition */
+    .actions.locked {
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <div class="container">
+    <div class="step-area" id="stepArea">
+      <p class="step-text" id="stepText"></p>
+      <p class="step-subtext" id="stepSubtext"></p>
+
+      <div class="actions" id="actions">
+        <button class="btn-done" id="btnDone">Done</button>
+        <button class="btn-skip" id="btnSkip">Not today</button>
+      </div>
+    </div>
+
+    <div class="step-counter" id="stepCounter"></div>
+  </div>
+
+  <script>
+    // ── RAMP DATA ──────────────────────────────────────────────
+
+    const morningRamp = [
+      {
+        text: "Drink a full glass of water.",
+        sub: null
+      },
+      {
+        text: "Splash cold water on your face.",
+        sub: null
+      },
+      {
+        text: "Put on real clothes. Not pajamas.",
+        sub: "Dressing signals your brain the day has started."
+      },
+      {
+        text: "Open the curtains. Let light in.",
+        sub: null
+      },
+      {
+        text: "Take your supplements.",
+        sub: "Omega-3s, Magnesium, Vitamin D + K2, Turmeric + Black Pepper."
+      },
+      {
+        text: "Make something simple to eat.",
+        sub: "Even just eggs. Or oats with berries and yoghurt. Eat at the table."
+      },
+      {
+        text: "Make your super water or coffee.",
+        sub: "Water + chia seeds + creatine. Or black coffee with cacao."
+      },
+      {
+        text: "Go to a window or the terrace. Two minutes of sun.",
+        sub: "No phone. Just you and the light."
+      },
+      {
+        text: "Open Obsidian. Write one sentence about how you feel.",
+        sub: "Just one. That's enough to start."
+      },
+      {
+        text: "Do 5 cat-cows on the floor.",
+        sub: "On all fours, arch and round your spine. Slowly. Not in bed."
+      },
+      {
+        text: "You've built enough momentum to start.",
+        sub: "Open your tasks if you want, or just keep going with your day.",
+        final: true
+      }
+    ];
+
+    const afternoonRamp = [
+      {
+        text: "Sit up. Get your feet on the floor.",
+        sub: "Not the full day. Just this one thing."
+      },
+      {
+        text: "Drink a full glass of water.",
+        sub: null
+      },
+      {
+        text: "Walk to the kitchen. Open the fridge.",
+        sub: null
+      },
+      {
+        text: "Eat something real. Even just eggs.",
+        sub: "Five minutes. Not Swiggy. Anything from the fridge."
+      },
+      {
+        text: "Take your supplements if you haven't.",
+        sub: "Omega-3s, Magnesium, Vitamin D + K2, Turmeric."
+      },
+      {
+        text: "Put on shoes. Step outside for 10 minutes.",
+        sub: "Walk around the block. Or stand on the terrace in the sun."
+      },
+      {
+        text: "Write what's on your mind. Get it out of your head.",
+        sub: "Open Obsidian or a notebook. Even three words count."
+      },
+      {
+        text: "The day isn't lost. Pick one thing from your task list.",
+        sub: "Don't try to make up lost time. Just continue from here.",
+        final: true
+      }
+    ];
+
+    const eveningRamp = [
+      {
+        text: "Drink some water.",
+        sub: null
+      },
+      {
+        text: "Have you eaten something real today?",
+        sub: "If not, make something now. Eggs, lentils, roasted veg. Whatever's in the fridge."
+      },
+      {
+        text: "Put on shoes. Step outside for 15 minutes.",
+        sub: "Walk. Hum or do vocals while you walk."
+      },
+      {
+        text: "Do 5 minutes of posture work.",
+        sub: "Dead bugs, glute bridges, or just cat-cow on the floor."
+      },
+      {
+        text: "Write something down. What happened today?",
+        sub: "Obsidian or Apple Journal. Even one sentence."
+      },
+      {
+        text: "Good. The evening is yours.",
+        sub: "Cook dinner if you haven't, then wind down.",
+        final: true
+      }
+    ];
+
+    const windDownRamp = [
+      {
+        text: "Turn on Night Shift on your phone.",
+        sub: "Warm tones only from here."
+      },
+      {
+        text: "Drink some water. Or make chamomile tea.",
+        sub: null
+      },
+      {
+        text: "Do your skin routine.",
+        sub: "This signals your nervous system the day is ending."
+      },
+      {
+        text: "Write one sentence about today.",
+        sub: "What happened? What felt hard? That's enough."
+      },
+      {
+        text: "Get in bed. Phone face down or across the room.",
+        sub: "Earplugs in. Room dark. Room cool."
+      },
+      {
+        text: "That's it. You did enough today. Sleep well.",
+        sub: null,
+        final: true
+      }
+    ];
+
+    // ── TIME DETECTION ─────────────────────────────────────────
+
+    function getRamp() {
+      const hour = new Date().getHours();
+
+      if (hour >= 4 && hour < 12) {
+        return { steps: morningRamp, type: 'morning' };
+      } else if (hour >= 12 && hour < 17) {
+        return { steps: afternoonRamp, type: 'afternoon' };
+      } else if (hour >= 17 && hour < 21) {
+        return { steps: eveningRamp, type: 'evening' };
+      } else {
+        return { steps: windDownRamp, type: 'winddown' };
+      }
+    }
+
+    // ── STATE ──────────────────────────────────────────────────
+
+    const ramp = getRamp();
+    const steps = ramp.steps;
+    const rampType = ramp.type;
+    let currentStep = 0;
+    let stepsCompleted = 0;
+    let stepsSkipped = 0;
+
+    // ── DOM REFS ───────────────────────────────────────────────
+
+    const stepArea = document.getElementById('stepArea');
+    const stepText = document.getElementById('stepText');
+    const stepSubtext = document.getElementById('stepSubtext');
+    const btnDone = document.getElementById('btnDone');
+    const btnSkip = document.getElementById('btnSkip');
+    const actions = document.getElementById('actions');
+    const progressFill = document.getElementById('progressFill');
+    const stepCounter = document.getElementById('stepCounter');
+
+    // ── THEME ──────────────────────────────────────────────────
+
+    if (rampType === 'winddown') {
+      document.body.classList.add('dark');
+    }
+
+    // ── RENDERING ──────────────────────────────────────────────
+
+    function showStep(index) {
+      const step = steps[index];
+      stepText.textContent = step.text;
+
+      if (step.sub) {
+        stepSubtext.textContent = step.sub;
+        stepSubtext.style.display = '';
+      } else {
+        stepSubtext.textContent = '';
+        stepSubtext.style.display = 'none';
+      }
+
+      // Progress
+      const progress = ((index) / steps.length) * 100;
+      progressFill.style.width = progress + '%';
+
+      // Counter
+      if (!step.final) {
+        stepCounter.textContent = 'step ' + (index + 1) + ' of ' + steps.length;
+      } else {
+        // Final step: show streak if > 1
+        const streak = getStreak();
+        if (streak > 1) {
+          stepCounter.textContent = 'day ' + streak;
+        } else {
+          stepCounter.textContent = '';
+        }
+        progressFill.style.width = '100%';
+      }
+
+      // Final step: change buttons
+      if (step.final) {
+        btnDone.textContent = 'Close';
+        btnSkip.style.display = 'none';
+      } else {
+        btnDone.textContent = 'Done';
+        btnSkip.style.display = '';
+      }
+
+      // Fade in
+      stepArea.classList.remove('fading');
+    }
+
+    function fadeOut() {
+      return new Promise(resolve => {
+        stepArea.classList.add('fading');
+        setTimeout(resolve, 250);
+      });
+    }
+
+    // ── ACTIONS ────────────────────────────────────────────────
+
+    async function handleDone() {
+      const step = steps[currentStep];
+
+      // Final step: close
+      if (step.final) {
+        saveSession();
+        // Attempt to close; if can't, show a "done" message
+        if (window.close) {
+          window.close();
+        }
+        stepText.textContent = "You can close this tab.";
+        stepSubtext.style.display = 'none';
+        btnDone.style.display = 'none';
+        btnSkip.style.display = 'none';
+        stepCounter.textContent = '';
+        return;
+      }
+
+      actions.classList.add('locked');
+      stepsCompleted++;
+
+      await fadeOut();
+
+      // Pause after done — a moment of rest
+      await new Promise(r => setTimeout(r, 400));
+
+      currentStep++;
+      showStep(currentStep);
+      actions.classList.remove('locked');
+    }
+
+    async function handleSkip() {
+      actions.classList.add('locked');
+      stepsSkipped++;
+
+      await fadeOut();
+
+      currentStep++;
+      showStep(currentStep);
+      actions.classList.remove('locked');
+    }
+
+    btnDone.addEventListener('click', handleDone);
+    btnSkip.addEventListener('click', handleSkip);
+
+    // ── STORAGE ────────────────────────────────────────────────
+
+    function todayStr() {
+      const d = new Date();
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem('justthis_data');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return { days: [], streak: { current: 0, longest: 0, last_date: null } };
+    }
+
+    function saveData(data) {
+      try {
+        localStorage.setItem('justthis_data', JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function updateStreak() {
+      const data = loadData();
+      const today = todayStr();
+      const last = data.streak.last_date;
+
+      if (last === today) {
+        // Already counted today
+        return;
+      }
+
+      // Check if last_date was yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.getFullYear() + '-' +
+        String(yesterday.getMonth() + 1).padStart(2, '0') + '-' +
+        String(yesterday.getDate()).padStart(2, '0');
+
+      if (last === yesterdayStr) {
+        data.streak.current++;
+      } else {
+        data.streak.current = 1;
+      }
+
+      if (data.streak.current > data.streak.longest) {
+        data.streak.longest = data.streak.current;
+      }
+
+      data.streak.last_date = today;
+      saveData(data);
+    }
+
+    function getStreak() {
+      const data = loadData();
+      return data.streak.current || 1;
+    }
+
+    function saveSession() {
+      const data = loadData();
+      const today = todayStr();
+
+      // Find or create today's entry
+      let entry = data.days.find(d => d.date === today);
+      if (entry) {
+        entry.steps_completed += stepsCompleted;
+        entry.steps_skipped += stepsSkipped;
+        entry.reached_end = true;
+      } else {
+        entry = {
+          date: today,
+          ramp: rampType,
+          opened_at: new Date().getHours() + ':' + String(new Date().getMinutes()).padStart(2, '0'),
+          steps_completed: stepsCompleted,
+          steps_skipped: stepsSkipped,
+          steps_total: steps.length,
+          reached_end: true
+        };
+        data.days.push(entry);
+      }
+
+      // Cap at 90 days
+      while (data.days.length > 90) {
+        data.days.shift();
+      }
+
+      saveData(data);
+    }
+
+    // ── INIT ───────────────────────────────────────────────────
+
+    updateStreak();
+    showStep(0);
+  </script>
+</body>
+</html>
