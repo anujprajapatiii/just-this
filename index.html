@@ -214,12 +214,65 @@
     .actions.locked {
       pointer-events: none;
     }
+
+    /* Clock */
+    .clock {
+      position: fixed;
+      top: 18px;
+      right: 20px;
+      font-size: 12px;
+      color: #C4B5A4;
+      letter-spacing: 0.06em;
+      font-variant-numeric: tabular-nums;
+      z-index: 10;
+    }
+
+    body.dark .clock {
+      color: #4A4744;
+    }
+
+    /* Upcoming items */
+    .upcoming-list {
+      width: 100%;
+      margin-top: 36px;
+      cursor: pointer;
+      filter: blur(7px);
+      opacity: 0.5;
+      transition: filter 0.5s ease, opacity 0.5s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .upcoming-list.revealed {
+      filter: blur(0);
+      opacity: 0.65;
+    }
+
+    .upcoming-list:empty {
+      display: none;
+    }
+
+    .upcoming-item {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #8A8A8A;
+      padding: 10px 0;
+      text-align: left;
+      border-top: 1px solid rgba(196, 181, 164, 0.35);
+    }
+
+    body.dark .upcoming-item {
+      color: #7A7672;
+      border-top-color: rgba(58, 56, 54, 0.6);
+    }
   </style>
 </head>
 <body>
   <div class="progress-bar">
     <div class="progress-fill" id="progressFill"></div>
   </div>
+
+  <div class="clock" id="clock"></div>
 
   <div class="container">
     <div class="step-area" id="stepArea">
@@ -230,6 +283,8 @@
         <button class="btn-done" id="btnDone">Done</button>
         <button class="btn-skip" id="btnSkip">Not today</button>
       </div>
+
+      <div class="upcoming-list" id="upcomingList"></div>
     </div>
 
     <div class="step-counter" id="stepCounter"></div>
@@ -413,6 +468,8 @@
     const actions = document.getElementById('actions');
     const progressFill = document.getElementById('progressFill');
     const stepCounter = document.getElementById('stepCounter');
+    const upcomingList = document.getElementById('upcomingList');
+    const clockEl = document.getElementById('clock');
 
     // ── THEME ──────────────────────────────────────────────────
 
@@ -459,6 +516,19 @@
       } else {
         btnDone.textContent = 'Done';
         btnSkip.style.display = '';
+      }
+
+      // Upcoming list — reset blur and repopulate
+      upcomingList.classList.remove('revealed');
+      upcomingList.innerHTML = '';
+      if (!step.final) {
+        const nextSteps = steps.slice(index + 1, index + 5);
+        nextSteps.forEach(s => {
+          const item = document.createElement('div');
+          item.className = 'upcoming-item';
+          item.textContent = s.text;
+          upcomingList.appendChild(item);
+        });
       }
 
       // Fade in
@@ -608,6 +678,23 @@
 
       saveData(data);
     }
+
+    // ── CLOCK ──────────────────────────────────────────────────
+
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      clockEl.textContent = h + ':' + m;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ── UPCOMING LIST TOGGLE ────────────────────────────────────
+
+    upcomingList.addEventListener('click', () => {
+      upcomingList.classList.toggle('revealed');
+    });
 
     // ── INIT ───────────────────────────────────────────────────
 
